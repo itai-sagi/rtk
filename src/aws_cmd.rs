@@ -5,6 +5,7 @@
 
 use crate::json_cmd;
 use crate::tracking;
+use crate::utils::{join_with_overflow, truncate_iso_date};
 use anyhow::{Context, Result};
 use serde_json::Value;
 use std::process::Command;
@@ -480,12 +481,7 @@ fn filter_ecs_list_services(json_str: &str) -> Option<String> {
         result.push(short.to_string());
     }
 
-    let mut output = result.join("\n");
-    if total > MAX_ITEMS {
-        output.push_str(&format!("\n... +{} more services", total - MAX_ITEMS));
-    }
-
-    Some(output)
+    Some(join_with_overflow(&result, total, MAX_ITEMS, "services"))
 }
 
 fn filter_ecs_describe_services(json_str: &str) -> Option<String> {
@@ -507,12 +503,7 @@ fn filter_ecs_describe_services(json_str: &str) -> Option<String> {
         ));
     }
 
-    let mut output = result.join("\n");
-    if total > MAX_ITEMS {
-        output.push_str(&format!("\n... +{} more services", total - MAX_ITEMS));
-    }
-
-    Some(output)
+    Some(join_with_overflow(&result, total, MAX_ITEMS, "services"))
 }
 
 fn filter_rds_instances(json_str: &str) -> Option<String> {
@@ -534,12 +525,7 @@ fn filter_rds_instances(json_str: &str) -> Option<String> {
         ));
     }
 
-    let mut output = result.join("\n");
-    if total > MAX_ITEMS {
-        output.push_str(&format!("\n... +{} more instances", total - MAX_ITEMS));
-    }
-
-    Some(output)
+    Some(join_with_overflow(&result, total, MAX_ITEMS, "instances"))
 }
 
 fn filter_cfn_list_stacks(json_str: &str) -> Option<String> {
@@ -556,17 +542,10 @@ fn filter_cfn_list_stacks(json_str: &str) -> Option<String> {
             .as_str()
             .or_else(|| stack["CreationTime"].as_str())
             .unwrap_or("?");
-        // Truncate date to just date portion
-        let short_date = if date.len() >= 10 { &date[..10] } else { date };
-        result.push(format!("{} {} {}", name, status, short_date));
+        result.push(format!("{} {} {}", name, status, truncate_iso_date(date)));
     }
 
-    let mut output = result.join("\n");
-    if total > MAX_ITEMS {
-        output.push_str(&format!("\n... +{} more stacks", total - MAX_ITEMS));
-    }
-
-    Some(output)
+    Some(join_with_overflow(&result, total, MAX_ITEMS, "stacks"))
 }
 
 fn filter_cfn_describe_stacks(json_str: &str) -> Option<String> {
@@ -583,8 +562,7 @@ fn filter_cfn_describe_stacks(json_str: &str) -> Option<String> {
             .as_str()
             .or_else(|| stack["CreationTime"].as_str())
             .unwrap_or("?");
-        let short_date = if date.len() >= 10 { &date[..10] } else { date };
-        result.push(format!("{} {} {}", name, status, short_date));
+        result.push(format!("{} {} {}", name, status, truncate_iso_date(date)));
 
         // Show outputs if present
         if let Some(outputs) = stack["Outputs"].as_array() {
@@ -596,17 +574,33 @@ fn filter_cfn_describe_stacks(json_str: &str) -> Option<String> {
         }
     }
 
-    let mut output = result.join("\n");
-    if total > MAX_ITEMS {
-        output.push_str(&format!("\n... +{} more stacks", total - MAX_ITEMS));
-    }
-
-    Some(output)
+    Some(join_with_overflow(&result, total, MAX_ITEMS, "stacks"))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_snapshot_sts_identity() {
+        let json = include_str!("../tests/fixtures/aws_sts_identity.json");
+        let result = filter_sts_identity(json).unwrap();
+        assert_eq!(
+            result,
+            "AWS: 123456789012 arn:aws:iam::123456789012:user/dev-user"
+        );
+    }
+
+    #[test]
+    fn test_snapshot_ec2_instances() {
+        let json = include_str!("../tests/fixtures/aws_ec2_describe.json");
+        let result = filter_ec2_instances(json).unwrap();
+        assert!(result.contains("EC2:"));
+        assert!(result.contains("i-0a1b2c3d4e5f00001"));
+        assert!(result.contains("running"));
+        assert!(result.contains("t3.micro"));
+        assert!(result.contains("10.0.1.10"));
+    }
 
     #[test]
     fn test_filter_sts_identity() {

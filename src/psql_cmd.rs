@@ -206,6 +206,26 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_snapshot_table_format() {
+        let input = include_str!("../tests/fixtures/psql_table.txt");
+        let result = filter_table(input);
+        assert!(result.contains("id\tusername\temail\tstatus"));
+        assert!(result.contains("alice_smith\talice@example.com"));
+        assert!(!result.contains("---+---"));
+        assert!(!result.contains("(20 rows)"));
+    }
+
+    #[test]
+    fn test_snapshot_expanded_format() {
+        let input = include_str!("../tests/fixtures/psql_expanded.txt");
+        let result = filter_expanded(input);
+        assert!(result.contains("[1] id=1 username=alice_smith"));
+        assert!(result.contains("[2] id=2 username=bob_jones"));
+        assert!(!result.contains("-[ RECORD"));
+        assert!(!result.contains("(5 rows)"));
+    }
+
+    #[test]
     fn test_is_table_format_detects_separator() {
         let input = " id | name\n----+------\n  1 | foo\n(1 row)\n";
         assert!(is_table_format(input));
