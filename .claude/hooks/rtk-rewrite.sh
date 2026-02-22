@@ -203,6 +203,14 @@ elif echo "$MATCH_CMD" | grep -qE '^aws[[:space:]]+'; then
 # --- PostgreSQL ---
 elif echo "$MATCH_CMD" | grep -qE '^psql([[:space:]]|$)'; then
   REWRITTEN="${ENV_PREFIX}$(echo "$CMD_BODY" | sed 's/^psql/rtk psql/')"
+
+# --- CDK ---
+elif echo "$MATCH_CMD" | grep -qE '^cdk[[:space:]]+'; then
+  REWRITTEN="${ENV_PREFIX}$(echo "$CMD_BODY" | sed 's/^cdk /rtk cdk /')"
+
+# --- Terraform ---
+elif echo "$MATCH_CMD" | grep -qE '^terraform[[:space:]]+'; then
+  REWRITTEN="${ENV_PREFIX}$(echo "$CMD_BODY" | sed 's/^terraform /rtk terraform /')"
 fi
 
 # If no rewrite needed, approve as-is

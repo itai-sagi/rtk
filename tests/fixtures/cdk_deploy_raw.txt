@@ -1,0 +1,32 @@
+MyStack: deploying... [1/1]
+MyStack: creating CloudFormation changeset...
+
+ ✨  Synthesis time: 4.21s
+
+MyStack: deploying...
+[████████████████████████████████████████] (8/8)
+
+ ✅  MyStack
+
+✨  Deployment time: 42.18s
+
+Outputs:
+MyStack.ApiEndpointUrl = https://abc123def.execute-api.us-east-1.amazonaws.com/prod
+MyStack.UserPoolId = us-east-1_XYZabc123
+MyStack.UserPoolClientId = 1abc2def3ghi4jkl5mno6pqr7s
+MyStack.TaskDefinitionArn = arn:aws:ecs:us-east-1:123456789012:task-definition/MyStackTaskDef:42
+
+Stack ARN:
+arn:aws:cloudformation:us-east-1:123456789012:stack/MyStack/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+✨  Total time: 46.39s
+
+│ Creating MyStackTaskDefExecutionRoleDefaultPolicy (AWS::IAM::Policy)
+│ Creating MyStackService (AWS::ECS::Service)
+│ UPDATE_IN_PROGRESS MyStack AWS::CloudFormation::Stack
+│ CREATE_IN_PROGRESS MyStackBucket (AWS::S3::Bucket)
+│ CREATE_COMPLETE MyStackBucket (AWS::S3::Bucket)
+│ CREATE_IN_PROGRESS MyStackTaskDef (AWS::ECS::TaskDefinition)
+│ CREATE_COMPLETE MyStackTaskDef (AWS::ECS::TaskDefinition)
+│ CREATE_COMPLETE MyStackService (AWS::ECS::Service)
+│ UPDATE_COMPLETE MyStack AWS::CloudFormation::Stack

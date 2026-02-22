@@ -1,0 +1,133 @@
+{
+  "Resources": {
+    "MyServiceTaskDefTaskRole1EDB4A67": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      }
+    },
+    "MyServiceTaskDefTaskRoleDefaultPolicyD9369F53": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": ["", ["arn:aws:s3:::", {"Ref": "MyBucket"}, "/*"]]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "MyServiceTaskDefTaskRoleDefaultPolicyD9369F53",
+        "Roles": [{"Ref": "MyServiceTaskDefTaskRole1EDB4A67"}]
+      }
+    },
+    "MyServiceTaskDef1234ABCD": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Cpu": 512,
+            "Environment": [
+              {"Name": "NODE_ENV", "Value": "production"},
+              {"Name": "DATABASE_URL", "Value": {"Fn::Sub": "postgresql://..."}}
+            ],
+            "Essential": true,
+            "Image": {"Fn::Sub": "123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp:latest"},
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {"Ref": "MyServiceTaskDefMyContainerLogGroup"},
+                "awslogs-region": {"Ref": "AWS::Region"},
+                "awslogs-stream-prefix": "MyService"
+              }
+            },
+            "Memory": 1024,
+            "Name": "MyContainer",
+            "PortMappings": [{"ContainerPort": 3000, "Protocol": "tcp"}]
+          }
+        ],
+        "Cpu": "512",
+        "ExecutionRoleArn": {"Fn::GetAtt": ["MyServiceTaskDefExecutionRoleC6B5DEB6", "Arn"]},
+        "Family": "MyStackMyServiceTaskDefABCD1234",
+        "Memory": "1024",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": ["FARGATE"],
+        "TaskRoleArn": {"Fn::GetAtt": ["MyServiceTaskDefTaskRole1EDB4A67", "Arn"]}
+      }
+    },
+    "MyServiceServiceD69D759B": {
+      "Type": "AWS::ECS::Service",
+      "Properties": {
+        "Cluster": {"Ref": "EcsDefaultClusterMnL3mNNYN504CA3FE"},
+        "DeploymentConfiguration": {
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 50
+        },
+        "DesiredCount": 2,
+        "EnableECSManagedTags": false,
+        "LaunchType": "FARGATE",
+        "LoadBalancers": [
+          {
+            "ContainerName": "MyContainer",
+            "ContainerPort": 3000,
+            "TargetGroupArn": {"Ref": "MyAlbListenerTargetGroup"}
+          }
+        ],
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "DISABLED",
+            "SecurityGroups": [{"Fn::GetAtt": ["MyServiceSecurityGroup", "GroupId"]}],
+            "Subnets": [{"Ref": "VpcPrivateSubnet1"}]
+          }
+        },
+        "TaskDefinition": {"Ref": "MyServiceTaskDef1234ABCD"}
+      }
+    },
+    "MyBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {"ServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}
+          ]
+        },
+        "VersioningConfiguration": {"Status": "Enabled"}
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain"
+    },
+    "MyApi": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Description": "This service serves as the main API gateway",
+        "EndpointConfiguration": {"Types": ["REGIONAL"]},
+        "Name": "MyApi"
+      }
+    }
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Type": "AWS::SSM::Parameter::Value<String>",
+      "Default": "/cdk-bootstrap/hnb659fds/version"
+    }
+  }
+}

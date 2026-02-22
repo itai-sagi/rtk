@@ -1,5 +1,6 @@
 mod aws_cmd;
 mod cargo_cmd;
+mod cdk_cmd;
 mod cc_economics;
 mod ccusage;
 mod config;
@@ -42,6 +43,7 @@ mod ruff_cmd;
 mod runner;
 mod summary;
 mod tee;
+mod terraform_cmd;
 mod tracking;
 mod tree;
 mod tsc_cmd;
@@ -140,6 +142,24 @@ enum Commands {
     /// AWS CLI with compact output (force JSON, compress)
     Aws {
         /// AWS service subcommand (e.g., sts, s3, ec2, ecs, rds, cloudformation)
+        subcommand: String,
+        /// Additional arguments
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+
+    /// CDK (AWS CDK) with compact output (synth/diff/deploy/destroy)
+    Cdk {
+        /// CDK subcommand (e.g., synth, diff, deploy, destroy, ls)
+        subcommand: String,
+        /// Additional arguments
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+
+    /// Terraform with compact output (plan/apply/state)
+    Terraform {
+        /// Terraform subcommand (e.g., plan, apply, destroy, state, output)
         subcommand: String,
         /// Additional arguments
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
@@ -961,6 +981,14 @@ fn main() -> Result<()> {
 
         Commands::Aws { subcommand, args } => {
             aws_cmd::run(&subcommand, &args, cli.verbose)?;
+        }
+
+        Commands::Cdk { subcommand, args } => {
+            cdk_cmd::run(&subcommand, &args, cli.verbose)?;
+        }
+
+        Commands::Terraform { subcommand, args } => {
+            terraform_cmd::run(&subcommand, &args, cli.verbose)?;
         }
 
         Commands::Psql { args } => {

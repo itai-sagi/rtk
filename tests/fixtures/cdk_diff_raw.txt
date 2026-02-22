@@ -1,0 +1,26 @@
+Stack MyStack
+Resources
+[+] AWS::ECS::Service MyService/Service MyServiceServiceD69D759B
+[-] AWS::SQS::Queue OldQueue OldQueueABCDEF12
+[~] AWS::ApiGateway::Stage MyApi/DeploymentStage.prod MyApiDeploymentStageEFGH5678
+[+] AWS::IAM::Role MyService/TaskDef/ExecutionRole MyServiceTaskDefExecutionRoleC6B5DEB6
+[+] AWS::IAM::Policy MyService/TaskDef/ExecutionRole/DefaultPolicy MyServiceTaskDefExecutionRoleDefaultPolicyABCD1234
+[~] AWS::ECS::TaskDefinition MyService/TaskDef MyServiceTaskDefABC123
+
+IAM Statement Changes
+┌───┬───────────────────────────────────────┬────────┬───────────────────────────────────────┬───────────────────────────────────────┬───────────┐
+│   │ Resource                              │ Effect │ Action                                │ Principal                             │ Condition │
+├───┼───────────────────────────────────────┼────────┼───────────────────────────────────────┼───────────────────────────────────────┼───────────┤
+│ + │ arn:aws:s3:::my-bucket                │ Allow  │ s3:GetObject                          │ AWS:arn:aws:iam::123456789012:role/... │           │
+│   │                                       │        │ s3:PutObject                          │                                       │           │
+│   │                                       │        │ s3:DeleteObject                       │                                       │           │
+├───┼───────────────────────────────────────┼────────┼───────────────────────────────────────┼───────────────────────────────────────┼───────────┤
+│ - │ arn:aws:sqs:::old-queue               │ Allow  │ sqs:SendMessage                       │ AWS:arn:aws:iam::123456789012:role/... │           │
+└───┴───────────────────────────────────────┴────────┴───────────────────────────────────────┴───────────────────────────────────────┴───────────┘
+(NOTE: There may be security-related changes not in this list. See https://github.com/aws/aws-cdk/issues/1299)
+
+Parameters
+[+] Parameter SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amihvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter MyParam1234
+
+Other Changes
+[~] Unknown Rules: {"GatewayResponses":{"DEFAULT_4XX":{"ResponseParameters":{"gatewayresponse.header.Access-Control-Allow-Origin":"''"},"ResponseType":"DEFAULT_4XX","StatusCode":"400"}}}
