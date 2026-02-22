@@ -266,6 +266,9 @@ enum Commands {
         /// Filter by file type (e.g., ts, py, rust)
         #[arg(short = 't', long)]
         file_type: Option<String>,
+        /// Show line numbers (always on, accepted for grep/rg compatibility)
+        #[arg(short = 'n', long)]
+        line_numbers: bool,
         /// Extra ripgrep arguments (e.g., -i, -A 3, -w, --glob)
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         extra_args: Vec<String>,
@@ -588,9 +591,9 @@ enum GitCommands {
     },
     /// Commit → "ok ✓ \<hash\>"
     Commit {
-        /// Commit message
+        /// Commit message (can be repeated for multi-paragraph)
         #[arg(short, long)]
-        message: String,
+        message: Vec<String>,
     },
     /// Push → "ok ✓ \<branch\>"
     Push {
@@ -917,7 +920,12 @@ fn main() -> Result<()> {
                 git::run(git::GitCommand::Add, &args, None, cli.verbose)?;
             }
             GitCommands::Commit { message } => {
-                git::run(git::GitCommand::Commit { message }, &[], None, cli.verbose)?;
+                git::run(
+                    git::GitCommand::Commit { messages: message },
+                    &[],
+                    None,
+                    cli.verbose,
+                )?;
             }
             GitCommands::Push { args } => {
                 git::run(git::GitCommand::Push, &args, None, cli.verbose)?;
@@ -1110,6 +1118,7 @@ fn main() -> Result<()> {
             max,
             context_only,
             file_type,
+            line_numbers: _, // no-op: line numbers always enabled in grep_cmd::run
             extra_args,
         } => {
             grep_cmd::run(
@@ -1498,4 +1507,69 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn test_git_commit_single_message() {
+        let cli = Cli::try_parse_from(["rtk", "git", "commit", "-m", "fix: typo"]).unwrap();
+        match cli.command {
+            Commands::Git {
+                command: GitCommands::Commit { message },
+            } => {
+                assert_eq!(message, vec!["fix: typo"]);
+            }
+            _ => panic!("Expected Git Commit command"),
+        }
+    }
+
+    #[test]
+    fn test_git_commit_multiple_messages() {
+        let cli = Cli::try_parse_from([
+            "rtk",
+            "git",
+            "commit",
+            "-m",
+            "feat: add support",
+            "-m",
+            "Body paragraph here.",
+        ])
+        .unwrap();
+        match cli.command {
+            Commands::Git {
+                command: GitCommands::Commit { message },
+            } => {
+                assert_eq!(message, vec!["feat: add support", "Body paragraph here."]);
+            }
+            _ => panic!("Expected Git Commit command"),
+        }
+    }
+
+    #[test]
+    fn test_git_commit_long_flag_multiple() {
+        let cli = Cli::try_parse_from([
+            "rtk",
+            "git",
+            "commit",
+            "--message",
+            "title",
+            "--message",
+            "body",
+            "--message",
+            "footer",
+        ])
+        .unwrap();
+        match cli.command {
+            Commands::Git {
+                command: GitCommands::Commit { message },
+            } => {
+                assert_eq!(message, vec!["title", "body", "footer"]);
+            }
+            _ => panic!("Expected Git Commit command"),
+        }
+    }
 }
