@@ -97,14 +97,17 @@ fn run_diff(args: &[String], verbose: u8) -> Result<()> {
     let timer = tracking::TimedExecution::start();
     let (raw, stderr, status) = run_cdk("diff", args, verbose)?;
 
-    // cdk diff exits non-zero when there are differences — that's normal
-    if !status.success() && raw.is_empty() {
-        timer.track("cdk diff", "rtk cdk diff", &stderr, &stderr);
-        eprintln!("{}", stderr.trim());
-        std::process::exit(status.code().unwrap_or(1));
+    // cdk diff exits 1 when differences are found (by design) and sends output
+    // to stderr. Only bail on genuine failure (both stdout and stderr empty).
+    if raw.is_empty() && stderr.is_empty() {
+        if !status.success() {
+            std::process::exit(status.code().unwrap_or(1));
+        }
+        println!("cdk diff: no changes");
+        return Ok(());
     }
 
-    let combined = if raw.is_empty() { &stderr } else { &raw };
+    let combined = if !raw.is_empty() { &raw } else { &stderr };
 
     let filtered = match filter_diff(combined) {
         Some(f) => {
@@ -118,6 +121,11 @@ fn run_diff(args: &[String], verbose: u8) -> Result<()> {
     };
 
     timer.track("cdk diff", "rtk cdk diff", combined, &filtered);
+
+    // Propagate exit code: non-zero means differences found
+    if !status.success() {
+        std::process::exit(status.code().unwrap_or(1));
+    }
     Ok(())
 }
 
