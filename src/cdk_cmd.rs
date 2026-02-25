@@ -15,7 +15,7 @@ lazy_static! {
     static ref CDK_STACK_RESULT: Regex =
         Regex::new(r"✅|❌|✨").unwrap();
     static ref CDK_OUTPUT_LINE: Regex =
-        Regex::new(r"^[A-Za-z0-9]+\.[A-Za-z0-9]+ = ").unwrap();
+        Regex::new(r"^[A-Za-z0-9][A-Za-z0-9-]*\.[A-Za-z0-9]+ = ").unwrap();
     static ref CDK_SYNTH_RESOURCE: Regex =
         Regex::new(r#""Type":\s*"AWS::"#).unwrap();
     static ref CDK_SEPARATOR: Regex =
@@ -465,6 +465,28 @@ MyStack.BucketName = my-bucket-abc123
         assert!(result.contains("Outputs:"));
         assert!(result.contains("MyStack.ApiUrl"));
         assert!(!result.contains("deploying..."));
+    }
+
+    #[test]
+    fn test_filter_deploy_hyphenated_stack_name() {
+        // Stack names with hyphens (e.g. platform-dev, external-dev) must match CDK_OUTPUT_LINE
+        let input = r#" ✅  platform-dev (no changes)
+
+ ✨  Deployment time: 2.92s
+
+Outputs:
+platform-dev.devplatformLoadBalancerDNS428721D3 = platfo-devpl-abc.eu-west-2.elb.amazonaws.com
+platform-dev.devplatformServiceURL7B47058B = https://dev.firmus.ninja
+Stack ARN:
+arn:aws:cloudformation:eu-west-2:123456789012:stack/platform-dev/abc123
+"#;
+        let result = filter_deploy(input).unwrap();
+        assert!(result.contains("✅"));
+        assert!(result.contains("✨"));
+        assert!(result.contains("Outputs:"));
+        assert!(result.contains("platform-dev.devplatformLoadBalancerDNS428721D3"));
+        assert!(result.contains("platform-dev.devplatformServiceURL7B47058B"));
+        assert!(result.contains("Stack ARN:"));
     }
 
     #[test]
